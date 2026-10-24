@@ -6,7 +6,7 @@ import { compress, showPreview } from './img.js';
 
 const $ = (id) => document.getElementById(id);
 
-async function identify(blob, pos, sampleId = '') {
+async function identify(blob, pos) {
   const st = $('lens-status'), out = $('lens-result');
   out.innerHTML = '';
   showPreview($('lens-preview'), blob);
@@ -15,7 +15,6 @@ async function identify(blob, pos, sampleId = '') {
   form.append('photo', blob, 'photo.jpg');
   if (pos) { form.append('lat', pos.lat); form.append('lng', pos.lng); }
   form.append('lang', lang);
-  form.append('sample_id', sampleId);
   try {
     render(await api('/api/identify', { form, timeout: 60000 }));
     st.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -62,16 +61,6 @@ export function initLens() {
     const go = e.target.closest('[data-go]');
     if (go) return actions.startRoute(go.dataset.go);
     const row = e.target.closest('[data-place]');
-    if (row) return actions.showPlace(row.dataset.place);
-    const s = e.target.closest('[data-sample]');
-    if (s) {
-      const sample = S.config.demo_samples.lens.find((x) => x.id === s.dataset.sample);
-      fetch('/' + sample.image).then((r) => r.blob()).then((b) => identify(b, { lat: sample.lat, lng: sample.lng }, sample.id));
-    }
+    if (row) actions.showPlace(row.dataset.place);
   });
-  const samples = S.config.demo_samples?.lens || [];
-  if (S.demo && samples.length) {
-    $('lens-samples').hidden = false;
-    $('lens-samples').querySelector('.sample-row').innerHTML = samples.map((s) => `<button data-sample="${esc(s.id)}"><img src="/${esc(s.image)}" alt=""><span>${esc(s.label)}</span></button>`).join('');
-  }
 }

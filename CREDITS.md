@@ -129,9 +129,7 @@ They were downscaled to 1024 px. Files under a CC BY-SA licence remain under tha
 | Old_Faculty_of_Law_GSU.jpg | CC BY-SA 4.0 | Hesham Saleh Gidado | https://commons.wikimedia.org/wiki/File:Old_Faculty_of_Law,_GSU.jpg |
 | Science_complex_of_Gombe_State_University.jpg | CC BY-SA 4.0 | Usmanagm | https://commons.wikimedia.org/wiki/File:Science_complex_of_Gombe_State_University.jpg |
 
-Demo copies in static/demo/lens-*.jpg are the files Gombe_State_University_faculty_of_law_02.jpg, The_Gombe_State_University_Library_02.jpg and Gombe_State_University_faculty_of_pharmaceutical_sciences_07.jpg from the table above.
-
-## Crop leaves (static/demo/)
+## Crop leaves (tests/fixtures/, used by the tests only)
 
 | File | Licence | Author | Source |
 |---|---|---|---|

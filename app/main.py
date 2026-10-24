@@ -54,10 +54,8 @@ def fnum(v: str | None) -> float | None:
 # ---------------------------------------------------------------- data
 @app.get("/api/config")
 def get_config():
-    demo = features.demo_data()
-    samples = {k: [{f: s[f] for f in ("id", "image", "label", "lat", "lng") if f in s} for s in demo.get(k, [])] for k in ("lens", "gonadoc")}
     return {"ai": gemma.ready, "model": gemma.model or None, "center": config.CENTER, "admin": bool(config.ADMIN_PIN),
-            "identify_radius_m": config.IDENTIFY_RADIUS_M, "demo_gps": demo.get("meta", {}).get("gps"), "demo_samples": samples}
+            "identify_radius_m": config.IDENTIFY_RADIUS_M}
 
 
 @app.get("/api/places")
@@ -113,28 +111,22 @@ async def rewrite(body: StepsIn):
 
 # ---------------------------------------------------------------- Lens
 @app.post("/api/identify")
-async def identify(photo: UploadFile = File(...), lat: str = Form(""), lng: str = Form(""), lang: str = Form("en"), sample_id: str = Form("")):
+async def identify(photo: UploadFile = File(...), lat: str = Form(""), lng: str = Form(""), lang: str = Form("en")):
     jpeg = await read_photo(photo)
     la, ln = fnum(lat), fnum(lng)
     try:
         return await features.identify(jpeg, la, ln, lang)
     except AIError as e:
-        canned = features.demo_answer("lens", sample_id, lang) if sample_id else None
-        if canned:
-            return canned
         return {**features.nearest_guesses(la, ln), "error": str(e)}
 
 
 # ---------------------------------------------------------------- GonaDoc
 @app.post("/api/gonadoc")
-async def gonadoc(photo: UploadFile = File(...), crop: str = Form(""), lang: str = Form("en"), sample_id: str = Form("")):
+async def gonadoc(photo: UploadFile = File(...), crop: str = Form(""), lang: str = Form("en")):
     jpeg = await read_photo(photo)
     try:
         return await features.diagnose(jpeg, crop, lang)
     except AIError as e:
-        canned = features.demo_answer("gonadoc", sample_id, lang) if sample_id else None
-        if canned:
-            return canned
         return JSONResponse({"error": str(e)}, status_code=503)
 
 
@@ -188,11 +180,6 @@ async def admin_place(pin: str = Form(...), id: str = Form(""), name: str = Form
 
 
 # ---------------------------------------------------------------- the web app
-@app.get("/demo")
-def demo_page():
-    return FileResponse(config.STATIC / "index.html")
-
-
 @app.get("/sw.js")
 def service_worker():
     return FileResponse(config.STATIC / "sw.js", media_type="text/javascript", headers={"Cache-Control": "no-cache"})

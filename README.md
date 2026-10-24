@@ -7,7 +7,7 @@
 <img src="docs/screenshots/02-search.jpg" width="190" alt="Asking where to pay school fees">
 <img src="docs/screenshots/03-route.jpg" width="190" alt="Walking route with turn-by-turn steps">
 <img src="docs/screenshots/05-lens.jpg" width="190" alt="Lens identifies the Main Library from a photo">
-<img src="docs/screenshots/06-gonadoc.jpg" width="190" alt="GonaDoc diagnosing a maize leaf in Hausa">
+<img src="docs/screenshots/06-gonadoc.jpg" width="190" alt="GonaDoc diagnosing a tomato leaf in Hausa">
 </p>
 
 ## The problem
@@ -29,13 +29,14 @@ Around the campus, smallholder farmers lose maize, tomato, groundnut, sorghum, r
 
 The whole interface switches between **English and Hausa**, and AI answers come back in the chosen language.
 
-## Built to survive a live demo
+## Built not to fail
 
 - Every Gemma call asks for JSON matching a strict schema, has a timeout, and turns any failure into a friendly message. If a model refuses structured-output mode, the schema moves into the prompt and the reply is validated on the server.
 - Search keeps working with no AI at all: keyword rules (`data/intents.json`) answer the common questions, in the browser if the server is unreachable.
 - When Lens cannot reach the AI it still shows the places nearest to you.
 - Photos are shrunk on the phone to 1024 px before upload.
-- **`/demo`** runs with a fixed position at the Main Gate, sample building photos and sample leaves. If the network or the AI is down, it falls back to recorded answers for those samples. If OpenFreeMap tiles cannot load, the map switches to an offline campus basemap (boundary, 275 building footprints, footpaths) shipped with the app.
+- Each AI request goes to Gemma 4 26B first; if it is slow or fails, the 31B model is asked as well and the first good answer wins. Answers are length-capped and checked, so a model stuck repeating itself is caught.
+- If OpenFreeMap tiles cannot load, the map switches to an offline campus basemap (boundary, 275 building footprints, footpaths) shipped with the app, and routing keeps working.
 - PWA: installable, and the app shell, places and map data are cached for offline use.
 
 ## Run it
@@ -49,7 +50,7 @@ cp .env.example .env        # add GEMINI_API_KEY (https://aistudio.google.com/ap
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 ```
 
-Open http://localhost:8000, or http://localhost:8000/demo for the pitch version.
+Open http://localhost:8000.
 
 At startup the server lists the models your key can use and picks the best Gemma 4 one: 26B, then 31B, then E4B (the 26B mixture-of-experts model is the fastest of the large ones). The choice is logged and shown at `/healthz`. Set `GEMMA_MODEL` in `.env` to force one.
 
@@ -66,7 +67,7 @@ Put the phone on the same Wi-Fi, open the printed address, tap **Advanced** then
 ### Tests
 
 ```bash
-# phone-sized browser run through every tab, in demo mode, with ADMIN_PIN=2468
+# phone-sized browser run through every tab (uploads the photos in tests/fixtures), with ADMIN_PIN=2468
 PLAYWRIGHT=/path/to/node_modules/playwright-core node tests/smoke.cjs http://localhost:8000
 ```
 
@@ -91,7 +92,7 @@ phone browser (plain HTML/CSS/JS, no build step)              FastAPI (one proce
 │ image compression (1024 px)              │──────────▶ │ /api/identify      │  Studio    │
 │ i18n.json (English / Hausa)              │            │ /api/gonadoc      ─┘ (google-   │
 │ service worker (offline, install)        │            │ /api/admin/*  (PIN)    genai)   │
-└──────────────────────────────────────────┘            │ static files, /demo             │
+└──────────────────────────────────────────┘            │ static files                    │
                                                         └─────────────────────────────────┘
 ```
 
@@ -99,7 +100,7 @@ phone browser (plain HTML/CSS/JS, no build step)              FastAPI (one proce
 |---|---|
 | `app/main.py` | Routes, upload handling, admin PIN, error handler |
 | `app/gemma.py` | Model selection, JSON schema calls, timeouts, fallbacks |
-| `app/features.py` | Prompts and logic for search, step rewriting, Lens and GonaDoc; demo answers |
+| `app/features.py` | Prompts and logic for search, step rewriting, Lens and GonaDoc |
 | `static/js/` | `map.js` map and markers, `route.js` graph and directions, `search.js`, `lens.js`, `gonadoc.js`, `admin.js`, `app.js` start-up |
 | `data/places.json` | The places (id, name, aliases, category, lat, lng, description, opening_hours, reference_photos, approximate) |
 | `data/paths.geojson` | Walkable lines for routing |

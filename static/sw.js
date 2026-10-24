@@ -1,7 +1,7 @@
 // Offline support: the app shell and campus data are cached; photos and map tiles are cached as they are seen.
-const VERSION = 'gsu-compass-v1';
+const VERSION = 'gsu-compass-v2';
 const SHELL = [
-  '/', '/demo', '/index.html', '/css/app.css', '/i18n.json', '/manifest.webmanifest',
+  '/', '/index.html', '/css/app.css', '/i18n.json', '/manifest.webmanifest',
   '/js/app.js', '/js/state.js', '/js/i18n.js', '/js/api.js', '/js/img.js', '/js/map.js', '/js/route.js', '/js/search.js', '/js/lens.js', '/js/gonadoc.js', '/js/admin.js',
   '/vendor/maplibre-gl.js', '/vendor/maplibre-gl.css', '/icons/icon-192.png',
   '/api/config', '/api/places', '/api/intents', '/api/geo/paths', '/api/geo/boundary', '/api/geo/buildings',

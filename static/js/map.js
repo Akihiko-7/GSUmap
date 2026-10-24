@@ -13,7 +13,7 @@ const ONLINE_STYLE = 'https://tiles.openfreemap.org/styles/liberty';
 const OFFLINE_STYLE = { version: 8, sources: {}, layers: [{ id: 'bg', type: 'background', paint: { 'background-color': '#eef1ea' } }] };
 
 async function pickStyle() {
-  // OpenFreeMap when the network is there; otherwise our own campus map, so the demo never shows a blank screen
+  // OpenFreeMap when the network is there; otherwise our own campus map, so the map is never blank
   try {
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), 4000);

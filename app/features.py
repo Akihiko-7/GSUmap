@@ -208,17 +208,3 @@ async def diagnose(photo: bytes, crop_hint: str, lang: str) -> dict:
     )
     r = await gemma.ask([prompt, image_part(photo)], Diagnosis)
     return {**r.model_dump(), "confidence": round(r.confidence, 2), "source": "ai"}
-
-
-# ---------------------------------------------------------------- canned answers for the offline demo
-@lru_cache(maxsize=1)
-def demo_data() -> dict:
-    return json.loads((config.DATA / "demo.json").read_text(encoding="utf-8"))
-
-
-def demo_answer(kind: str, sample_id: str, lang: str) -> dict | None:
-    for s in demo_data().get(kind, []):
-        if s["id"] == sample_id:
-            ans = s.get("answer_ha" if lang == "ha" else "answer") or s.get("answer")
-            return {**ans, "source": "demo"}
-    return None

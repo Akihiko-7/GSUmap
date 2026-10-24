@@ -1,5 +1,5 @@
 // GonaDoc: photograph a crop leaf, Gemma names the likely disease or pest and suggests cheap treatment first.
-import { S, esc, status } from './state.js';
+import { esc, status } from './state.js';
 import { t, lang } from './i18n.js';
 import { api } from './api.js';
 import { compress, showPreview } from './img.js';
@@ -13,7 +13,7 @@ function paintLang() {
   $('gd-lang').querySelectorAll('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === gdLang()));
 }
 
-async function diagnose(blob, sampleId = '') {
+async function diagnose(blob) {
   const st = $('gd-status'), out = $('gd-result');
   out.innerHTML = '';
   showPreview($('gd-preview'), blob);
@@ -22,7 +22,6 @@ async function diagnose(blob, sampleId = '') {
   form.append('photo', blob, 'leaf.jpg');
   form.append('crop', $('gd-crop').value);
   form.append('lang', gdLang());
-  form.append('sample_id', sampleId);
   try {
     render(await api('/api/gonadoc', { form, timeout: 60000 }));
     st.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -72,15 +71,4 @@ export function initGonaDoc() {
   });
   paintLang();
   document.addEventListener('langchange', paintLang);
-  const samples = S.config.demo_samples?.gonadoc || [];
-  if (S.demo && samples.length) {
-    $('gd-samples').hidden = false;
-    $('gd-samples').querySelector('.sample-row').innerHTML = samples.map((s) => `<button data-sample="${esc(s.id)}"><img src="/${esc(s.image)}" alt=""><span>${esc(s.label)}</span></button>`).join('');
-    $('gd-samples').addEventListener('click', (e) => {
-      const b = e.target.closest('[data-sample]');
-      if (!b) return;
-      const s = samples.find((x) => x.id === b.dataset.sample);
-      fetch('/' + s.image).then((r) => r.blob()).then((blob) => diagnose(blob, s.id));
-    });
-  }
 }

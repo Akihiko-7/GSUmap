@@ -6,8 +6,7 @@ export const S = {
   byId: new Map(),
   config: {},
   intents: [],
-  demo: location.pathname.startsWith('/demo'),
-  gps: null, // { lat, lng, acc, fake }
+  gps: null, // { lat, lng, acc }
   gpsNote: '',
 };
 

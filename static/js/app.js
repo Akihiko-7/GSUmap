@@ -37,11 +37,6 @@ actions.reloadPlaces = async () => {
 
 // ---------------------------------------------------------------- GPS
 function startGps() {
-  if (S.demo && S.config.demo_gps) {
-    S.gps = { ...S.config.demo_gps, acc: 10, fake: true };
-    showMe(S.gps);
-    return;
-  }
   if (!navigator.geolocation) { S.gpsNote = 'no_gps'; return; }
   if (!window.isSecureContext) { S.gpsNote = 'gps_insecure'; return; }
   navigator.geolocation.watchPosition(
@@ -150,7 +145,6 @@ async function boot() {
   S.config = config;
   S.intents = intents;
   setPlaces(places);
-  if (S.demo) $('demo-badge').hidden = false;
 
   document.querySelectorAll('[data-close]').forEach((b) => b.addEventListener('click', () => { $(b.dataset.close).hidden = true; }));
   $('nav').addEventListener('click', (e) => { const b = e.target.closest('[data-view]'); if (b) showView(b.dataset.view); });

@@ -88,7 +88,7 @@ class Gemma:
     async def _ask(self, parts: list, schema: type[T], max_tokens: int) -> T:
         """Hedged request: ask the main model; if it fails, or has not answered after HEDGE_AFTER seconds,
         ask the backup model as well and take whichever good answer comes first. Google's free tier is
-        sometimes slow or answers 500/504 for a while, and this keeps the demo moving."""
+        sometimes slow or answers 500/504 for a while, and this keeps answers coming."""
         backup = self.backup
         pending = {asyncio.create_task(self._ask_model(self.model, parts, schema, max_tokens))}
         hedged = backup is None

@@ -1,9 +1,10 @@
-// Phone-sized smoke test of GSU Compass (demo mode, admin PIN 2468 expected).
+// Phone-sized smoke test of GSU Compass (admin PIN 2468 expected). GPS is faked at the Main Gate.
 // Usage: PLAYWRIGHT=/path/to/node_modules/playwright-core node tests/smoke.cjs [baseUrl] [screenshotDir]
 const { chromium } = require(process.env.PLAYWRIGHT || 'playwright-core');
 const base = process.argv[2] || 'http://localhost:8000';
 const out = process.argv[3] || require('os').tmpdir() + '/gsu-compass-shots';
 require('fs').mkdirSync(out, { recursive: true });
+const root = require('path').resolve(__dirname, '..');
 
 (async () => {
   const browser = await chromium.launch({ executablePath: process.env.CHROME || '/usr/bin/google-chrome', args: ['--headless=new', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
@@ -16,7 +17,7 @@ require('fs').mkdirSync(out, { recursive: true });
   const shot = (n) => page.screenshot({ path: `${out}/${n}.png` });
   const ok = (cond, msg) => { console.log((cond ? 'PASS ' : 'FAIL ') + msg); if (!cond) process.exitCode = 1; };
 
-  await page.goto(base + '/demo');
+  await page.goto(base + '/');
   await page.waitForSelector('.mk-wrap', { timeout: 20000 });
   await page.waitForTimeout(2500);
   ok((await page.locator('.mk-wrap').count()) > 50, 'markers drawn: ' + (await page.locator('.mk-wrap').count()));
@@ -60,19 +61,21 @@ require('fs').mkdirSync(out, { recursive: true });
   await page.waitForTimeout(800);
   await shot('04-sheet');
 
-  // lens sample
+  // lens: stand by the library and "take" a photo of it (a photo not used as its reference)
+  await ctx.setGeolocation({ latitude: 10.305069, longitude: 11.173325 });
+  await page.waitForTimeout(500);
   await page.click('#nav [data-view="lens"]');
-  await page.click('#lens-samples [data-sample="lens-library"]');
+  await page.setInputFiles('#lens-camera', root + '/static/photos/commons/The_Gombe_State_University_Library_02.jpg');
   await page.waitForSelector('#lens-status .spin', { timeout: 10000 });
   await page.waitForFunction(() => !document.querySelector('#lens-status .spin'), null, { timeout: 70000 });
   await page.waitForTimeout(300);
   console.log('     lens ->', (await page.textContent('#lens-result')).slice(0, 120).replace(/\s+/g, ' '));
   await shot('05-lens');
 
-  // gonadoc sample, in Hausa
+  // gonadoc, answer in Hausa
   await page.click('#nav [data-view="gonadoc"]');
   await page.click('#gd-lang [data-lang="ha"]');
-  await page.click('#gd-samples [data-sample="leaf-maize"]');
+  await page.setInputFiles('#gd-camera', root + '/tests/fixtures/leaf-tomato-early-blight.jpg');
   await page.waitForSelector('#gd-status .spin', { timeout: 10000 });
   await page.waitForFunction(() => !document.querySelector('#gd-status .spin'), null, { timeout: 70000 });
   await page.waitForTimeout(300);
