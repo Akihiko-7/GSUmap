@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>GSU Compass</title>
+  <meta name="description" content="Campus guide for new students at Gombe State University, with GonaDoc, the farm doctor.">
+  <meta name="theme-color" content="#0b5d2a">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/icons/icon-192.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/vendor/maplibre-gl.css">
+  <link rel="stylesheet" href="/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <img class="logo" src="/icons/icon-192.png" alt="">
+    <h1 data-i18n="app_name">GSU Compass</h1>
+    <span class="badge" id="demo-badge" hidden data-i18n="demo_badge">DEMO</span>
+    <span class="spacer"></span>
+    <button class="lang" id="lang-btn" aria-label="Language">HA</button>
+    <button class="icon-btn" id="admin-btn" aria-label="Admin" hidden>
+      <svg viewBox="0 0 24 24"><path d="M12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Zm7.4-2.5a7.5 7.5 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.5 7.5 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.5-2.2-1.6Z"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <div id="map"></div>
+    <div class="chips" id="chips"></div>
+    <button class="fab" id="locate-btn" aria-label="My location">
+      <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm9 3h-2.1A7 7 0 0 0 13 5.1V3h-2v2.1A7 7 0 0 0 5.1 11H3v2h2.1a7 7 0 0 0 5.9 5.9V21h2v-2.1a7 7 0 0 0 5.9-5.9H21v-2Zm-9 6a5 5 0 1 1 0-10 5 5 0 0 1 0 10Z"/></svg>
+    </button>
+
+    <!-- place details -->
+    <section class="sheet" id="sheet" hidden>
+      <button class="sheet-close" data-close="sheet" aria-label="Close">&times;</button>
+      <div class="sheet-photo" id="sheet-photo"></div>
+      <div class="sheet-body">
+        <div class="cat-pill" id="sheet-cat"></div>
+        <h2 id="sheet-name"></h2>
+        <p class="muted small" id="sheet-aliases"></p>
+        <p id="sheet-desc"></p>
+        <p class="hours"><b data-i18n="hours">Opening hours</b>: <span id="sheet-hours"></span></p>
+        <p class="muted small" id="sheet-approx" data-i18n="approximate">Position approximate</p>
+        <button class="btn primary big" id="sheet-go" data-i18n="take_me_there">Take me there</button>
+      </div>
+    </section>
+
+    <!-- directions -->
+    <section class="sheet route" id="route" hidden>
+      <button class="sheet-close" id="route-close" aria-label="Close">&times;</button>
+      <div class="sheet-body">
+        <h2 id="route-dest"></h2>
+        <div class="route-sum"><span id="route-dist"></span><span id="route-time"></span></div>
+        <label class="row small"><span data-i18n="route_from">From</span>
+          <select id="route-from"></select>
+        </label>
+        <p class="note" id="route-note" hidden></p>
+        <ol class="steps" id="route-steps"></ol>
+        <button class="btn ghost" id="route-friendly" data-i18n="route_friendly">Say it friendlier</button>
+      </div>
+    </section>
+
+    <!-- search -->
+    <section class="view" id="view-search" hidden>
+      <h2 data-i18n="search_title">Where do you want to go?</h2>
+      <form id="search-form" class="search-row" autocomplete="off">
+        <input id="search-input" type="search" data-i18n-ph="search_ph" placeholder="">
+        <button class="btn primary" data-i18n="search_btn">Search</button>
+      </form>
+      <div class="examples"><span class="muted small" data-i18n="search_suggest">Try:</span>
+        <button class="chip" data-ex="search_ex1"></button><button class="chip" data-ex="search_ex2"></button>
+        <button class="chip" data-ex="search_ex3"></button><button class="chip" data-ex="search_ex4"></button>
+      </div>
+      <div id="search-status" class="status"></div>
+      <div id="search-results" class="results"></div>
+    </section>
+
+    <!-- lens -->
+    <section class="view" id="view-lens" hidden>
+      <h2 data-i18n="lens_title">Snap &amp; Identify</h2>
+      <p class="muted" data-i18n="lens_help"></p>
+      <div class="capture">
+        <label class="btn primary big"><input type="file" accept="image/*" capture="environment" id="lens-camera" hidden><span data-i18n="lens_take">Take a photo</span></label>
+        <label class="btn ghost big"><input type="file" accept="image/*" id="lens-file" hidden><span data-i18n="lens_upload">Choose from gallery</span></label>
+      </div>
+      <div class="samples" id="lens-samples" hidden><p class="muted small" data-i18n="lens_samples">Demo photos</p><div class="sample-row"></div></div>
+      <div class="preview" id="lens-preview"></div>
+      <div id="lens-status" class="status"></div>
+      <div id="lens-result" class="results"></div>
+    </section>
+
+    <!-- gonadoc -->
+    <section class="view" id="view-gonadoc" hidden>
+      <h2 data-i18n="gd_title">GonaDoc: Farm Doctor</h2>
+      <p class="muted" data-i18n="gd_help"></p>
+      <div class="row wrap">
+        <label class="row small"><span data-i18n="gd_crop">Crop</span>
+          <select id="gd-crop">
+            <option value="" data-i18n="gd_crop_auto">Not sure</option>
+            <option value="maize" data-i18n="crop_maize">Maize</option><option value="tomato" data-i18n="crop_tomato">Tomato</option>
+            <option value="groundnut" data-i18n="crop_groundnut">Groundnut</option><option value="sorghum" data-i18n="crop_sorghum">Sorghum</option>
+            <option value="rice" data-i18n="crop_rice">Rice</option><option value="beans" data-i18n="crop_beans">Beans</option>
+          </select>
+        </label>
+        <div class="seg" id="gd-lang"><span class="small" data-i18n="gd_lang">Answer in</span><button data-lang="en">English</button><button data-lang="ha">Hausa</button></div>
+      </div>
+      <div class="capture">
+        <label class="btn primary big"><input type="file" accept="image/*" capture="environment" id="gd-camera" hidden><span data-i18n="gd_take">Take leaf photo</span></label>
+        <label class="btn ghost big"><input type="file" accept="image/*" id="gd-file" hidden><span data-i18n="gd_upload">Upload photo</span></label>
+      </div>
+      <div class="samples" id="gd-samples" hidden><p class="muted small" data-i18n="gd_samples">Demo leaves</p><div class="sample-row"></div></div>
+      <p class="disclaimer" data-i18n="gd_disclaimer"></p>
+      <div class="preview" id="gd-preview"></div>
+      <div id="gd-status" class="status"></div>
+      <div id="gd-result" class="results"></div>
+    </section>
+
+    <!-- admin -->
+    <section class="view admin" id="view-admin" hidden>
+      <button class="sheet-close" data-close="view-admin" aria-label="Close">&times;</button>
+      <h2 data-i18n="admin_title">Add / update a place</h2>
+      <form id="admin-pin-form" class="search-row">
+        <input id="admin-pin" type="password" inputmode="numeric" data-i18n-ph="admin_pin" placeholder="PIN">
+        <button class="btn primary" data-i18n="admin_unlock">Unlock</button>
+      </form>
+      <form id="admin-form" hidden>
+        <label><span data-i18n="admin_existing">Update existing place</span>
+          <select name="id" id="admin-existing"><option value="" data-i18n="admin_new">New place</option></select></label>
+        <div class="row wrap">
+          <button type="button" class="btn primary" id="admin-loc" data-i18n="admin_use_loc">Use my location</button>
+          <span class="small muted" data-i18n="admin_tap_map">Or tap the map</span>
+        </div>
+        <div class="row"><input name="lat" id="admin-lat" placeholder="lat" required inputmode="decimal"><input name="lng" id="admin-lng" placeholder="lng" required inputmode="decimal"></div>
+        <p class="small muted" id="admin-acc"></p>
+        <label><span data-i18n="admin_name">Name</span><input name="name" id="admin-name" required></label>
+        <label><span data-i18n="admin_aliases">Other names</span><input name="aliases" id="admin-aliases"></label>
+        <label><span data-i18n="admin_category">Category</span><select name="category" id="admin-category"></select></label>
+        <label><span data-i18n="admin_desc">Description</span><textarea name="description" id="admin-desc" rows="3"></textarea></label>
+        <label><span data-i18n="admin_hours">Opening hours</span><input name="opening_hours" id="admin-hours"></label>
+        <label><span data-i18n="admin_photos">Reference photos</span><input type="file" accept="image/*" capture="environment" id="admin-photos" multiple></label>
+        <div class="preview" id="admin-preview"></div>
+        <button class="btn primary big" data-i18n="admin_save">Save place</button>
+      </form>
+    </section>
+  </main>
+
+  <nav class="bottomnav" id="nav">
+    <button data-view="map" class="active"><svg viewBox="0 0 24 24"><path d="m15 5.5-6-2-6 2.3v15l6-2.3 6 2 6-2.3v-15l-6 2.3Zm-1 13-4-1.3V5.5l4 1.3v11.7Z"/></svg><span data-i18n="nav_map">Map</span></button>
+    <button data-view="search"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.8l-.3-.3A6.5 6.5 0 1 0 14 15.5l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z"/></svg><span data-i18n="nav_search">Search</span></button>
+    <button data-view="lens"><svg viewBox="0 0 24 24"><path d="M12 9a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8-3h-3.2L15 4H9L7.2 6H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2Zm-8 13a6 6 0 1 1 0-12 6 6 0 0 1 0 12Z"/></svg><span data-i18n="nav_lens">Lens</span></button>
+    <button data-view="gonadoc"><svg viewBox="0 0 24 24"><path d="M17 8C8 10 5.9 16.2 3.8 21.3l1.9.7 1-2.3c.5.2 1 .3 1.3.3C19 20 22 3 22 3c-1 2-8 2.3-13 3.3S2 11.5 2 13.5s1.8 3.8 1.8 3.8C7 8 17 8 17 8Z"/></svg><span data-i18n="nav_gonadoc">GonaDoc</span></button>
+  </nav>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="/vendor/maplibre-gl.js"></script>
+  <script type="module" src="/js/app.js"></script>
+</body>
+</html>
