@@ -1,12 +1,12 @@
 # DigitalOcean App Platform spec. Deploy with: doctl apps create --spec .do/app.yaml
-# Change the repo to yours, then set GEMINI_API_KEY and ADMIN_PIN as encrypted values in the dashboard.
+# Set GEMINI_API_KEY and ADMIN_PIN as encrypted values in the dashboard.
 name: gsu-compass
 region: fra
 services:
   - name: web
     dockerfile_path: Dockerfile
     github:
-      repo: YOUR_GITHUB_USER/GSU-Compass
+      repo: Akihiko-7/GSUmap
       branch: main
       deploy_on_push: true
     http_port: 8080

@@ -43,7 +43,7 @@ The whole interface switches between **English and Hausa**, and AI answers come 
 Needs Python 3.11 or newer.
 
 ```bash
-git clone <this repo> GSU-Compass && cd GSU-Compass
+git clone https://github.com/Akihiko-7/GSUmap.git && cd GSUmap
 pip install -r requirements.txt
 cp .env.example .env        # add GEMINI_API_KEY (https://aistudio.google.com/apikey) and an ADMIN_PIN
 uvicorn app.main:app --host 0.0.0.0 --port 8000
@@ -73,7 +73,7 @@ PLAYWRIGHT=/path/to/node_modules/playwright-core node tests/smoke.cjs http://loc
 ## Deploy to DigitalOcean App Platform
 
 1. Push this repo to GitHub.
-2. In `.do/app.yaml` set `repo:` to your GitHub repo, then run `doctl apps create --spec .do/app.yaml`, or create an app in the dashboard from the repo (it detects the `Dockerfile`).
+2. Run `doctl apps create --spec .do/app.yaml`, or create an app in the dashboard from the repo (it detects the `Dockerfile`).
 3. Add `GEMINI_API_KEY` and `ADMIN_PIN` as encrypted environment variables.
 4. The health check is `/healthz`. App Platform gives you https, so GPS, camera and install work at once.
 
