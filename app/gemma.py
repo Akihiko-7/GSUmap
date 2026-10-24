@@ -11,6 +11,7 @@ import re
 from typing import TypeVar
 
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 from pydantic import BaseModel, ValidationError
 
@@ -63,12 +64,13 @@ class Gemma:
             log.warning("no Gemma 4 model listed; using %s", self.model)
         log.info("using model %s", self.model)
 
-    async def ask(self, parts: list, schema: type[T], timeout: float | None = None) -> T:
+    async def ask(self, parts: list, schema: type[T], timeout: float | None = None, max_tokens: int = 1500) -> T:
+        """max_tokens caps the answer: Gemma sometimes falls into a repeating loop, and the cap ends it quickly."""
         if not self.ready:
             raise AIError("AI is not configured on this server")
         timeout = timeout or config.AI_TIMEOUT
         try:
-            return await asyncio.wait_for(self._ask(parts, schema), timeout)
+            return await asyncio.wait_for(self._ask(parts, schema, max_tokens), timeout)
         except asyncio.TimeoutError:
             raise AIError("The AI took too long to answer")
         except AIError:
@@ -77,20 +79,51 @@ class Gemma:
             log.exception("gemma call failed")
             raise AIError("The AI service could not be reached") from e
 
-    async def _ask(self, parts: list, schema: type[T]) -> T:
+    @property
+    def backup(self) -> str | None:
+        """The other large Gemma 4 model, tried once when the main one has a server error."""
+        others = [n for n in self.available if n.startswith("gemma-4") and n != self.model and ("26b" in n or "31b" in n)]
+        return others[0] if others else None
+
+    async def _ask(self, parts: list, schema: type[T], max_tokens: int) -> T:
+        """Hedged request: ask the main model; if it fails, or has not answered after HEDGE_AFTER seconds,
+        ask the backup model as well and take whichever good answer comes first. Google's free tier is
+        sometimes slow or answers 500/504 for a while, and this keeps the demo moving."""
+        backup = self.backup
+        pending = {asyncio.create_task(self._ask_model(self.model, parts, schema, max_tokens))}
+        hedged = backup is None
+        last_error: Exception | None = None
+        try:
+            while pending:
+                done, pending = await asyncio.wait(pending, timeout=None if hedged else config.HEDGE_AFTER, return_when=asyncio.FIRST_COMPLETED)
+                for task in done:
+                    if task.exception() is None:
+                        return task.result()
+                    last_error = task.exception()
+                    log.warning("gemma attempt failed: %s", str(last_error)[:200])
+                if not hedged and (done or pending):
+                    log.info("asking %s as well", backup)
+                    pending.add(asyncio.create_task(self._ask_model(backup, parts, schema, max_tokens)))
+                    hedged = True
+            raise last_error or AIError("The AI returned no answer")
+        finally:
+            for task in pending:
+                task.cancel()
+
+    async def _ask_model(self, model: str, parts: list, schema: type[T], max_tokens: int) -> T:
         if self.schema_mode:
             try:
-                cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=schema, temperature=0.2)
-                resp = await self.client.aio.models.generate_content(model=self.model, contents=parts, config=cfg)
+                cfg = types.GenerateContentConfig(response_mime_type="application/json", response_schema=schema, temperature=0.2, max_output_tokens=max_tokens)
+                resp = await self.client.aio.models.generate_content(model=model, contents=parts, config=cfg)
                 return self._parse(resp.text, schema)
             except Exception as e:
                 msg = str(e).lower()
-                if "json" not in msg and "schema" not in msg and "mime" not in msg:
+                if not isinstance(e, genai_errors.ClientError) or ("json" not in msg and "schema" not in msg and "mime" not in msg):
                     raise
                 log.warning("model rejected structured output (%s); putting the schema in the prompt instead", e)
                 self.schema_mode = False
         hint = "Reply with ONLY a JSON object, no markdown, matching this JSON schema:\n" + json.dumps(schema.model_json_schema())
-        resp = await self.client.aio.models.generate_content(model=self.model, contents=[*parts, hint], config=types.GenerateContentConfig(temperature=0.2))
+        resp = await self.client.aio.models.generate_content(model=model, contents=[*parts, hint], config=types.GenerateContentConfig(temperature=0.2, max_output_tokens=max_tokens))
         return self._parse(resp.text, schema)
 
     @staticmethod
@@ -110,9 +143,11 @@ def image_part(jpeg: bytes) -> types.Part:
 
 
 def language_rule(lang: str) -> str:
+    names = (" In text, call places only by the names given (never by their ids), keep those names exactly as written, "
+             "and never invent building names that are not in the list.")
     if lang == "ha":
-        return "Write every text value in Hausa (Latin script, as spoken in Gombe and Kano). Keep place names and ids exactly as given."
-    return "Write every text value in simple, friendly English for a Nigerian university student. Keep place names and ids exactly as given."
+        return "Write every text value in Hausa (Latin script, as spoken in Gombe and Kano)." + names
+    return "Write every text value in simple, friendly English for a Nigerian university student." + names
 
 
 gemma = Gemma()

@@ -13,6 +13,8 @@ GEMMA_MODEL = os.getenv("GEMMA_MODEL", "").strip()
 # Order of preference when picking: the 26B mixture-of-experts answers fastest of the big ones, then 31B, then E4B.
 GEMMA_PREFERENCE = ["26b", "31b", "e4b", "e2b"]
 AI_TIMEOUT = float(os.getenv("AI_TIMEOUT", "30"))
+# seconds to wait for the main model before also asking the backup model
+HEDGE_AFTER = float(os.getenv("HEDGE_AFTER", "6"))
 ADMIN_PIN = os.getenv("ADMIN_PIN", "").strip()
 
 DATA = ROOT / "data"

@@ -86,7 +86,8 @@ function renderRoute() {
   $('route-note').hidden = !notes.length;
   $('route-note').textContent = notes.join(' ');
   paintSteps(r.steps);
-  $('route-friendly').disabled = !S.config.ai;
+  // Hausa steps come from our own templates: Gemma 4's rewrites of them were garbled in testing, so the button is English only
+  $('route-friendly').hidden = !S.config.ai || lang === 'ha';
   $('route').scrollTop = 0;
   drawRoute(r.coords, $('route').offsetHeight);
 }
@@ -128,7 +129,7 @@ function initRoutePanel() {
     btn.disabled = true;
     btn.textContent = t('route_friendly_busy');
     try {
-      const r = await api('/api/directions/rewrite', { json: { steps: current.original, destination: current.dest.name, lang }, timeout: 25000 });
+      const r = await api('/api/directions/rewrite', { json: { steps: current.original, destination: current.dest.name, lang }, timeout: 40000 });
       if (r.source === 'ai') paintSteps(r.steps);
       else toast(r.error || t('error'));
     } catch (err) {

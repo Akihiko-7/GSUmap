@@ -7,7 +7,7 @@ from functools import lru_cache
 from typing import Literal
 
 from PIL import Image, ImageOps
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from . import config, places
 from .gemma import AIError, gemma, image_part, language_rule
@@ -73,7 +73,7 @@ async def resolve(query: str, lang: str) -> dict:
         f"{listing}\n{language_rule(lang)}"
     )
     try:
-        r = await gemma.ask([prompt], Resolved, timeout=min(config.AI_TIMEOUT, 20))
+        r = await gemma.ask([prompt], Resolved, timeout=min(config.AI_TIMEOUT, 12))
         if r.place_id in ids:
             return {"place_id": r.place_id, "reason": r.reason, "alternatives": [a for a in r.alternatives if a in ids and a != r.place_id][:2], "source": "ai"}
         log.info("AI found no place for %r", query)
@@ -86,15 +86,28 @@ async def resolve(query: str, lang: str) -> dict:
 class Steps(BaseModel):
     steps: list[str]
 
+    @field_validator("steps")
+    @classmethod
+    def not_looping(cls, v: list[str]) -> list[str]:
+        # a model stuck in a loop writes very long steps or the same word over and over: reject so the other model is tried
+        for step in v:
+            words = re.findall(r"\w+", step.lower())
+            if len(step) > 240 or (len(words) > 8 and len(set(words)) < len(words) / 2):
+                raise ValueError("step looks broken")
+        return v
+
 
 async def rewrite_steps(steps: list[str], destination: str, lang: str) -> list[str]:
+    target = "Hausa" if lang == "ha" else "simple, friendly English"
     prompt = (
-        f"Rewrite these walking directions on the Gombe State University campus to {destination} so they are short, warm and easy to follow "
-        "for a fresher. Keep the same number of steps, the same order, every distance and every place name. Do not add new turns.\n"
-        + "\n".join(f"{i + 1}. {s}" for i, s in enumerate(steps)) + "\n" + language_rule(lang)
+        f"Rewrite these {len(steps)} walking directions to {destination} so they are short and warm, in {target}. "
+        "One step for each step below, same order, same distances, place names unchanged.\n"
+        + "\n".join(f"{i + 1}. {s}" for i, s in enumerate(steps))
     )
-    r = await gemma.ask([prompt], Steps, timeout=min(config.AI_TIMEOUT, 20))
-    return r.steps if r.steps else steps
+    r = await gemma.ask([prompt], Steps, max_tokens=80 * len(steps) + 200)
+    if len(r.steps) != len(steps):
+        raise AIError("The AI changed the number of steps")
+    return r.steps
 
 
 # ---------------------------------------------------------------- Lens: which building is this?
@@ -188,7 +201,10 @@ async def diagnose(photo: bytes, crop_hint: str, lang: str) -> dict:
         "For treatment put cheap, locally available options first (removing and burning infected leaves, wood ash, neem leaf extract, "
         "crop rotation, resistant local varieties, spacing, weeding), then approved chemical options sold in Nigerian agro-dealer shops "
         "with safety advice (gloves, mask, follow the label, keep from children). Never invent product brand names. "
-        "If the photo is unclear or not a crop, say so and keep confidence low. " + language_rule(lang)
+        "If the photo is unclear or not a crop, say so and keep confidence low. "
+        "'problem' must name the specific disease, pest or deficiency with its common English name and the pathogen or pest in brackets, "
+        "for example 'Early blight (Alternaria solani)', even when the rest of the answer is in Hausa; never just 'disease'. "
+        + language_rule(lang)
     )
     r = await gemma.ask([prompt, image_part(photo)], Diagnosis)
     return {**r.model_dump(), "confidence": round(r.confidence, 2), "source": "ai"}

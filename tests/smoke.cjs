@@ -63,6 +63,7 @@ require('fs').mkdirSync(out, { recursive: true });
   // lens sample
   await page.click('#nav [data-view="lens"]');
   await page.click('#lens-samples [data-sample="lens-library"]');
+  await page.waitForSelector('#lens-status .spin', { timeout: 10000 });
   await page.waitForFunction(() => !document.querySelector('#lens-status .spin'), null, { timeout: 70000 });
   await page.waitForTimeout(300);
   console.log('     lens ->', (await page.textContent('#lens-result')).slice(0, 120).replace(/\s+/g, ' '));
@@ -72,6 +73,7 @@ require('fs').mkdirSync(out, { recursive: true });
   await page.click('#nav [data-view="gonadoc"]');
   await page.click('#gd-lang [data-lang="ha"]');
   await page.click('#gd-samples [data-sample="leaf-maize"]');
+  await page.waitForSelector('#gd-status .spin', { timeout: 10000 });
   await page.waitForFunction(() => !document.querySelector('#gd-status .spin'), null, { timeout: 70000 });
   await page.waitForTimeout(300);
   console.log('     gonadoc ->', (await page.textContent('#gd-result')).slice(0, 120).replace(/\s+/g, ' '));
